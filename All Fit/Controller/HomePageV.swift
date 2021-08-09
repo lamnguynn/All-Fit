@@ -14,6 +14,8 @@ class HomePageV: UIViewController, UICollectionViewDelegate, UICollectionViewDat
     
     var collection: UICollectionView!
     var table: UITableView = UITableView()
+    lazy var dumbbellImage = UIImageView(image: UIImage(named: "dumbbell(1)"))
+    lazy var dumbbellLabel = UILabel()
     
     var settingsButton: UIButton = {                                                                //Settings Button
         let settingsButton = UIButton()
@@ -46,8 +48,9 @@ class HomePageV: UIViewController, UICollectionViewDelegate, UICollectionViewDat
     
     var subtitleLabel: UILabel = {                                                                  //Subtitle label
         let subtitleLabel = UILabel()
-        let attributes = [NSAttributedString.Key.font: UIFont.boldSystemFont(ofSize: 30)]
-        subtitleLabel.attributedText = NSAttributedString(string: "subtitle", attributes: attributes)
+        subtitleLabel.font = UIFont(name: "Poppins-Thin", size: 14)
+        subtitleLabel.font = UIFont.systemFont(ofSize: 15)
+        subtitleLabel.text = "Click on any focus area to get started!"
         
         return subtitleLabel
     }()
@@ -95,7 +98,19 @@ class HomePageV: UIViewController, UICollectionViewDelegate, UICollectionViewDat
         
         //Set up the add button
         setupAddButton()
+    }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        if(workoutList.isEmpty){
+            dumbbellImage.isHidden = false
+            dumbbellImage.isHidden = false
+        }
+        else{
+            dumbbellImage.isHidden = true
+            dumbbellImage.isHidden = true
+        }
     }
     
     // MARK: asset set up
@@ -103,14 +118,14 @@ class HomePageV: UIViewController, UICollectionViewDelegate, UICollectionViewDat
     //Set up the title labels
     fileprivate func setupLabels(){
         self.subtitleLabel.textColor = .darkGray
-        self.subtitleLabel.font = UIFont(name: "Poppins-Thin", size: 30)
+        //self.subtitleLabel.font = UIFont(name: "Poppins-Thin", size: 14)
         self.titleLabel.textColor = .white
         self.titleLabel.font = UIFont(name: "Poppins-SemiBold", size: 40)
         
         self.view.addSubview(titleLabel)
         self.view.addSubview(subtitleLabel)
         addLabelConstraints(titleLabel, topAnchor: self.view.topAnchor, topConstant: self.view.frame.height / 11.2)
-        addLabelConstraints(subtitleLabel, topAnchor: self.titleLabel.bottomAnchor, topConstant: -2)
+        addLabelConstraints(subtitleLabel, topAnchor: self.titleLabel.bottomAnchor, topConstant: -5)
     }
     
     //Set up the setting button
@@ -170,14 +185,42 @@ class HomePageV: UIViewController, UICollectionViewDelegate, UICollectionViewDat
     fileprivate func setupTable(){
         table.delegate = self
         table.dataSource = self
-        table.register(UITableViewCell.self, forCellReuseIdentifier: "datacell")
+        table.register(HomePageTableCell.self, forCellReuseIdentifier: "datacell")
         table.layer.cornerRadius = 30
         table.separatorStyle = .none
         table.backgroundColor = UIColor(red: 250/255, green: 249/255, blue: 229/255, alpha: 1)
         table.tableFooterView = UIView()
+        table.contentInset = UIEdgeInsets(top: 5, left: 0, bottom: 0, right: 0)
+        /*
+        table.layer.shadowColor = UIColor.lightGray.cgColor
+        table.layer.shadowRadius = 6
+        table.layer.shadowOpacity = 0.8
+        table.layer.shadowOffset = CGSize(width: 0, height: 3)
+        table.layer.shadowPath = .none
+         */
         
         self.view.addSubview(table)
         addTableConstraints()
+        
+        if(workoutList.isEmpty){
+            //Add a dumbbell image
+            dumbbellImage.alpha = 0.25
+            dumbbellImage.transform = CGAffineTransform(rotationAngle: -210)
+            table.addSubview(dumbbellImage)
+            
+            dumbbellImage.translatesAutoresizingMaskIntoConstraints = false
+            dumbbellImage.centerXAnchor.constraint(equalTo: table.centerXAnchor).isActive = true
+            dumbbellImage.centerYAnchor.constraint(equalTo: table.centerYAnchor, constant: -90).isActive = true
+            
+            dumbbellLabel.text = "Nothing yet..."
+            dumbbellLabel.textColor = .lightGray
+            dumbbellLabel.alpha = 0.7
+            table.addSubview(dumbbellLabel)
+            
+            dumbbellLabel.translatesAutoresizingMaskIntoConstraints = false
+            dumbbellLabel.topAnchor.constraint(equalTo: dumbbellImage.bottomAnchor, constant: -60).isActive = true
+            dumbbellLabel.centerXAnchor.constraint(equalTo: table.centerXAnchor).isActive = true
+        }
     }
     
     // MARK: asset constraints
@@ -212,7 +255,7 @@ class HomePageV: UIViewController, UICollectionViewDelegate, UICollectionViewDat
      */
     func addTableConstraints(){
         table.translatesAutoresizingMaskIntoConstraints = false
-        table.topAnchor.constraint(equalTo: collection.bottomAnchor, constant: 24).isActive = true
+        table.topAnchor.constraint(equalTo: collection.bottomAnchor, constant: 10).isActive = true
         table.leadingAnchor.constraint(equalTo: self.view.leadingAnchor, constant: 15).isActive = true
         table.trailingAnchor.constraint(equalTo: self.view.trailingAnchor, constant: -15).isActive = true
         table.bottomAnchor.constraint(equalTo: self.view.bottomAnchor, constant: -(self.view.frame.height / 22.4)).isActive = true
@@ -244,6 +287,72 @@ class HomePageV: UIViewController, UICollectionViewDelegate, UICollectionViewDat
         label.leadingAnchor.constraint(equalTo: self.view.leadingAnchor, constant: 20).isActive = true
     }
     
+    // MARK: segue function
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == "showNotes"{
+            (segue as! cornerPopUp).circleOrigin = notesButton.center
+        }
+        else if segue.identifier == "showStockExercises"{                       //Pass data for any stock focus areas / exercises
+            if let nextPage = segue.destination as? DisplayExercisesPageVC{
+                
+                //Set up the passing of data
+                let keys = Array(stockFocusAreaData.keys)
+                let values = Array(stockFocusAreaData.values)
+                let newIndexPath = collection.indexPathsForSelectedItems                    //IndexPath to use as reference
+                let index = newIndexPath!.last![1]                                          //Numberical value for the IndexPath clicked
+                nextPage.indexClicked = index
+                nextPage.homeTable = table
+                nextPage.dumbbellImage = dumbbellImage
+                nextPage.dumbbellLabel = dumbbellLabel
+                
+                //Set the start coordinates of the segue animation
+                (segue as! cornerPopUp).circleOrigin =  collection.center
+                
+                // Initialize the title label and the table's data in the next page
+                nextPage.titleText = keys[index]
+                
+                //Pass the appropriate exercise data
+                for exercise in values[index]{                                          //Load the data from the stock focus area
+                    nextPage.exercisesToDisplay.append(exercise)
+                }
+                
+                for i in userCreatedExercisesData{                                      //Load the data from the user created focus area
+                    if i.focusArea == keys[index]{
+                        nextPage.exercisesToDisplay.append(Exercise(name: i.name!, exerciseDescription: i.summary!, unit: i.unit!, needEquipment: i.needEquipment))
+                    }
+                }
+            }
+            
+            
+        }
+        else if segue.identifier == "showUserExercises"{                        //Pass data for any user generated focus areas / exercises
+            if let nextPage = segue.destination as? DisplayExercisesPageVC{
+                // Get the indexPath to be able to access which cell is clicked
+                let newIndexPath = collection.indexPathsForSelectedItems
+                let index = newIndexPath!.last![1]
+                nextPage.indexClicked = index
+                nextPage.homeTable = table
+                nextPage.dumbbellImage = dumbbellImage
+                nextPage.dumbbellLabel = dumbbellLabel
+                
+                //Set the start coordinates of the segue animation
+                (segue as! cornerPopUp).circleOrigin =  collection.center
+                
+                // Initialize the title label and pass info to table's data in the next page
+                let focusAreaToDisplay = userCreatedFocusAreasData[index - 7].name
+                nextPage.titleText = focusAreaToDisplay
+                
+                //Pass the appropriate exercise data
+                for i in userCreatedExercisesData{
+                    if i.focusArea == focusAreaToDisplay{
+                        nextPage.exercisesToDisplay.append(Exercise(name: i.name!, exerciseDescription: i.summary!, unit: i.unit!, needEquipment: i.needEquipment))
+                    }
+                }
+            }
+        }
+    }
+    
     // MARK: objc functions
     
     /*
@@ -251,7 +360,9 @@ class HomePageV: UIViewController, UICollectionViewDelegate, UICollectionViewDat
         Transitions to the settings
      */
     @objc func settingsClicked(){
-        performSegue(withIdentifier: "showMore", sender: self)
+        let vc = SettingsPageVC()
+        vc.modalPresentationStyle = .overCurrentContext
+        self.present(vc, animated: false, completion: nil)
     }
     
     /*
@@ -312,6 +423,8 @@ class HomePageV: UIViewController, UICollectionViewDelegate, UICollectionViewDat
         present(addAlert, animated: true, completion: nil)
     }
     
+    @IBAction func unwindBackHome(_ segue: UIStoryboardSegue ){}
+    
     // MARK: helper functions
     
     /*
@@ -350,7 +463,9 @@ extension HomePageV: UICollectionViewDelegateFlowLayout{
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "datacell", for: indexPath) as! HomePageCollectionCelll
         cell.layer.cornerRadius = 20
         cell.backgroundColor = UIColor(red: 250/255, green: 216/255, blue: 171/255, alpha: 1)
+        cell.applyShadow()
         cell.subtitleLabel.isHidden = true
+        
         if indexPath.row == 0{
             cell.subtitleLabel.isHidden = false
             cell.subtitleLabel.text = "Click to see more"
@@ -374,7 +489,12 @@ extension HomePageV: UICollectionViewDelegateFlowLayout{
         Shows all the workouts when a cell is clicked
      */
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        
+        if indexPath.row < 7{
+            performSegue(withIdentifier: "showStockExercises", sender: self)
+        }
+        else{
+            performSegue(withIdentifier: "showUserExercises", sender: self)
+        }
     }
     
     /*
@@ -382,7 +502,7 @@ extension HomePageV: UICollectionViewDelegateFlowLayout{
         Returns an inset to set for the collection view
      */
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
-        return UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 15)
+        return UIEdgeInsets(top: 0, left: 10, bottom: 10, right: 15)
     }
     
     /*
@@ -390,20 +510,131 @@ extension HomePageV: UICollectionViewDelegateFlowLayout{
         Returns a size for each item in collection view
      */
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        return CGSize(width: 115, height: self.view.frame.height / 7.46 - 1) // OG: 65
+        return CGSize(width: 115, height: self.view.frame.height / 7.46 - 11) // OG: 65
     }
+    
+    /*
+        @contextMenuConfigurationForItemAt
+        Return a menu with actions on a long hold
+     */
+    func collectionView(_ collectionView: UICollectionView, contextMenuConfigurationForItemAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration{
+        if indexPath.row < 7{ return UIContextMenuConfiguration() }
+        
+        let contextMenu = UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { suggestedActions in
+            let delete = UIAction(title: "Delete", image: UIImage(systemName: "trash")){ [weak self] action in
+                
+                //Prompt an alert to delete
+                let warningAlert = UIAlertController(title: "Warning!", message: "Are you sure you want to delete?", preferredStyle: .alert)
+                
+                let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)     //Cancel action
+                let deleteAction = UIAlertAction(title: "Confirm", style: .destructive) { _ in      //Delete action
+                    //Delete from data source
+                    let itemToDelete = userCreatedFocusAreasData[indexPath.row - 7]
+                    
+                    userCreatedFocusAreasData.remove(at: indexPath.row - 7)
+                    
+                    //Delete the cell
+                    self?.collection.deleteItems(at: [indexPath])
+                    
+                    //Delete from core data
+                    PersistenceService.context.delete(itemToDelete)
+                    PersistenceService.saveContext()
+                }
+                
+                warningAlert.addAction(deleteAction)
+                warningAlert.addAction(cancelAction)
+                self?.present(warningAlert, animated: true, completion: nil)
+                
+            }
+            
+            return UIMenu(title: "", children: [delete])
+        }
+        
+        return contextMenu
+    }
+    
+    
 }
 
 // MARK: table functions
 extension HomePageV: UITableViewDelegate, UITableViewDataSource{
+    
+    /*
+        @cellForRowAt
+        Builds a cell
+     */
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "datacell", for: indexPath)
+        let cell = tableView.dequeueReusableCell(withIdentifier: "datacell", for: indexPath) as! HomePageTableCell
         cell.backgroundColor = UIColor(red: 250/255, green: 249/255, blue: 229/255, alpha: 1)
+        cell.selectionStyle = .none
         
+        //Configure the cell
+        let workoutListKeys = Array(workoutList.keys)
+        let workoutListValues = Array(workoutList.values)
+        
+        if(!workoutList.isEmpty){
+            let sets = workoutListValues[indexPath.row].sets
+            let reps = workoutListValues[indexPath.row].units
+            let units = workoutListValues[indexPath.row].exercise.unit
+            
+            cell.exerciseLabel.text = workoutListKeys[indexPath.row]
+            cell.setsLabel.text = "Sets: \(sets!) | Reps: \(reps!) " + units!
+            cell.notesLabel.text = "Notes: " + workoutListValues[indexPath.row].notes
+        }
         return cell
     }
     
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 4
+    /*
+        @trailingSwipeActionsConfigurationForRowAt
+        Delete the exercise from the workout on swipe
+     */
+    func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        let workoutListKeys = Array(workoutList.keys)
+        let deleteAction = UIContextualAction(style: .destructive, title: nil) { action, view, completion in
+            //Delete from model
+            workoutList.removeValue(forKey: workoutListKeys[indexPath.row])
+            
+            //Delete from view
+            self.table.deleteRows(at: [indexPath], with: .fade)
+            
+            //Update dumbbell image
+            DispatchQueue.main.async {
+                if workoutList.isEmpty{
+                    self.dumbbellImage.isHidden = false;
+                    self.dumbbellLabel.isHidden = false;
+                }
+            }
+            
+            completion(true)
+        }
+        
+        deleteAction.image = UIImage(systemName: "trash")
+        let swipeConfig = UISwipeActionsConfiguration(actions: [deleteAction])
+        return swipeConfig
     }
+    
+    /*
+        @numberOfRowsInSection
+        Returns the number of cells in the table
+     */
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return workoutList.count
+    }
+    
+    /*
+        @heightForRowAt
+        Returns a value for the height of a cell
+     */
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return 75
+    }
+    
+    /*
+        @didSelectRowAt
+        Deselects the cell when clicked
+     */
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+    }
+    
 }

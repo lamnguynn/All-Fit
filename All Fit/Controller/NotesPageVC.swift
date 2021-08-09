@@ -40,8 +40,9 @@ class NotesPageVC: UIViewController, UITextViewDelegate {
         
         //Set up the clear button
         trashButton.backgroundColor = applyPowderRedColor()
-        trashButton.layer.cornerRadius = 25
+        trashButton.layer.cornerRadius = 27
         trashButton.tintColor = .white
+        trashButton.bottomAnchor.constraint(equalTo: self.view.bottomAnchor, constant: -(self.view.frame.height / 22.4) - 25).isActive = true
     }
     
     //Perform the segue animation

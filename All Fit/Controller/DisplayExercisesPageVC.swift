@@ -18,6 +18,9 @@ class DisplayExercisesPageVC: UIViewController {
     @IBOutlet var addButton: UIButton!
     
     var exercisesToDisplay = [Exercise]()
+    weak var homeTable: UITableView?
+    weak var dumbbellImage: UIImageView?
+    weak var dumbbellLabel: UILabel?
     fileprivate var timesClicked: Int = 0               //Times the user clicks on the cell. Used to control the flipping of the card
     var titleText: String!                              //Text of the title label
     var sets: Int = 0                                   //Value for the number of sets
@@ -302,6 +305,11 @@ class DisplayExercisesPageVC: UIViewController {
         cell.trackerLabel.text = "Sets: \(sets) | " + cell.unitsLabel.text! + " \(units)"
         cell.exerciseNameLabel.text = exercisesToDisplay[newIndexPath!.row].name + " (Added)"
         cell.notesTextField.isEnabled = false
+        DispatchQueue.main.async {
+            self.homeTable?.reloadData()
+            self.dumbbellLabel?.isHidden = true
+            self.dumbbellImage?.isHidden = true
+        }
         
         //Flip the cell approproately as well
         if timesClicked % 2 == 1{
@@ -382,9 +390,11 @@ extension DisplayExercisesPageVC: UITableViewDelegate, UITableViewDataSource, Di
         cell.setsLabel.font = UIFont.boldSystemFont(ofSize: 25)
         cell.unitsLabel.font = UIFont.boldSystemFont(ofSize: 25)
         cell.needEquipmentImage.tintColor = .white
-        cell.notesTextField.attributedPlaceholder = NSAttributedString(string: "Enter notes", attributes: [NSAttributedString.Key.foregroundColor: UIColor.white])
         cell.addToWorkoutButton.setTitleColor( UIColor(red: 216/255, green: 203/255, blue: 203/255, alpha: 1), for: .normal)
         cell.notesTextField.delegate = self
+        cell.notesTextField.backgroundColor = .white
+        cell.notesTextField.textColor = .gray
+        cell.notesTextField.attributedPlaceholder = NSAttributedString(string: "Enter notes", attributes: [NSAttributedString.Key.foregroundColor: UIColor.gray])
         
         //Have the cell face front when loaded up from memory
         flipCellFront(cell)
